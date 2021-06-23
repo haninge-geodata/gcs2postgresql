@@ -1,0 +1,32 @@
+{
+  "gcBucketName": "api_bucket",
+  "gcFiles": [
+    {
+      "name": "file1.json",
+      "columnSet": ["id", "etc"],
+      "downloadCronSchedule": "*/5+2 * * * *",
+      "appendData": false
+    },
+    {
+      "name": "file2.json",
+      "columnSet": ["id", "etc"],
+      "downloadCronSchedule": "0 * * * *",
+      "appendData": true
+    },
+    {
+      "name": "file3.json",
+      "columnSet": ["id", "etc"],
+      "downloadCronSchedule": "0 0 * * *",
+      "appendData": false
+    }
+  ],
+  "gcKeyFile": "key.json",
+  "dbConfig": {
+    "user": "username",
+    "password": "password",
+    "host": "myserver.se",
+    "port": 5432,
+    "database": "MyDatabase",
+    "schema": "public"
+  }
+}

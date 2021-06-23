@@ -1,0 +1,32 @@
+{
+  "name": "gcs2postgresql",
+  "version": "0.0.2",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/haninge-geodata/gcs2postgresql.git"
+  },
+  "description": "NodeJS server app for fetching JSON from a Google Cloud Storage API and inserting it into PostgreSQL with repeated intervals.",
+  "keywords": [
+    "haningekommun",
+    "server",
+    "json",
+    "googlecloudstorage",
+    "postgresql"
+  ],
+  "license": "BSD-2-Clause",
+  "main": "gcs2postgresql.js",
+  "scripts": {
+    "start": "node gcs2postgresql.js"
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^5.8.5",
+    "node-cron": "^3.0.0",
+    "bluebird": "^3.7.2",
+    "debug": "^4.3.1",
+    "npm": "^6.14.12",
+    "pg-promise": "^10.10.2"
+  },
+  "optionalDependencies": {
+    "node-windows": "^0.1.14"
+  }
+}
