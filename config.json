@@ -28,5 +28,6 @@
     "port": 5432,
     "database": "MyDatabase",
     "schema": "public"
-  }
+  },
+  "logLevel": "errors"
 }

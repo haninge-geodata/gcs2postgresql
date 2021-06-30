@@ -13,6 +13,14 @@ const config = require('./config.json');
 // The ID of your GCS bucket
 const bucketName = config.gcBucketName;
 
+// Set log level constants
+const LOG_LEVELS = {
+  errors: 3,
+  warnings: 2,
+  info: 1,
+  debug: 0
+};
+
 // Create a connection using pg-promise
 const pgconnection = pgp({
   schema: config.dbConfig.schema
@@ -37,37 +45,52 @@ function downloadJSON(stream) {
 config.gcFiles.forEach((gcFile) => {
   cron.schedule(gcFile.downloadCronSchedule, () => {
     try {
-      // console.log(`${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}: Fetching ${gcFile.name}`);
+      // Re-read the config file to allow changing some parameters in flight (such as log level)
+      config = require('./config.json');
+      if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.info) {
+        console.log(`${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}: Fetching ${gcFile.name}`);
+      }
       // Get a readable stream for the GC Storage file to download
       const stream = storage.bucket(bucketName).file(gcFile.name).createReadStream();
       // Download from the stream and then insert data into PostgreSQL
       downloadJSON(stream)
         .then(JSON.parse)
-        // If the 'appendData' config flag is true, all table rows are deleted before inserting new data.
-        .then(gcFile.appendData ? (jsonData) => jsonData : (jsonData) => {
-          if (jsonData.length > 0) {
-            // console.log(`${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}: ${jsonData.length} JSON objects found. Clearing table before inserting.`);
-            db.none(`DELETE FROM ${gcFile.name.split('.')[0]}`)
-              .catch(console.error);
-          } else {
-            console.warn(`${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}: No JSON objects found.`);
-          }
-          return jsonData;
-        })
         .then((jsonData) => {
           // Performant multi-row insert from https://stackoverflow.com/a/37302557/1461981
+
           // our set of columns, to be created only once (statically), and then reused,
           // to let it cache up its formatting templates for high performance:
           const cs = new pgconnection.helpers.ColumnSet(gcFile.columnSet, { table: gcFile.name.split('.')[0] });
           // generating a multi-row insert query:
-          const query = pgconnection.helpers.insert(jsonData, cs);
+          let query = pgconnection.helpers.insert(jsonData, cs);
+
+          // If the 'appendData' config flag is false, all table rows are deleted before inserting new data.
+          if (jsonData.length > 0 && !gcFile.appendData) {
+            if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.debug) {
+              console.log(`${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}: ${jsonData.length} JSON objects found. Clearing table before inserting.`);
+            }
+            query = `begin;\ndelete from ${gcFile.name.split('.')[0]};\n${query};\ncommit;`;
+          } else if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.warnings) {
+            console.warn(`${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}: No JSON objects found.`);
+          }
+          if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.debug) {
+            console.log(`${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}:\n${query}`);
+          }
           // executing the query:
           return db.none(query)
-            .catch(console.error);
+            .catch(LOG_LEVELS[config.logLevel] <= LOG_LEVELS.errors ? (e) => console.error(e) : e => e);
         })
-        .catch(console.error);
+        .catch(LOG_LEVELS[config.logLevel] <= LOG_LEVELS.errors ? (e) => console.error(e) : e => e)
+        .finally(LOG_LEVELS[config.logLevel] <= LOG_LEVELS.info ? (e) => {
+          if (e === undefined) {
+            console.log(`${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}: Transaction completed.`);
+          }
+          return e;
+        } : e => e);
     } catch (error) {
+      if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.errors) {
       console.error(error);
+    }
     }
   });
 });
