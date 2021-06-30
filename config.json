@@ -20,7 +20,7 @@
       "appendData": false
     }
   ],
-  "gcKeyFile": "key.json",
+  "gcKeyFile": "./key.json",
   "dbConfig": {
     "user": "username",
     "password": "password",
