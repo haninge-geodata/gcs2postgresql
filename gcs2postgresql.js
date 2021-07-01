@@ -70,7 +70,7 @@ config.gcFiles.forEach((gcFile) => {
               console.log(`${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}: ${jsonData.length} JSON objects found. Clearing table before inserting.`);
             }
             query = `begin;\ndelete from ${gcFile.name.split('.')[0]};\n${query};\ncommit;`;
-          } else if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.warnings) {
+          } else if (jsonData.length === 0 && LOG_LEVELS[config.logLevel] <= LOG_LEVELS.warnings) {
             console.warn(`${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}: No JSON objects found.`);
           }
           if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.debug) {
