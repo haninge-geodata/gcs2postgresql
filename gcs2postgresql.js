@@ -45,8 +45,6 @@ function downloadJSON(stream) {
 config.gcFiles.forEach((gcFile) => {
   cron.schedule(gcFile.downloadCronSchedule, () => {
     try {
-      // Re-read the config file to allow changing some parameters in flight (such as log level)
-      config = require('./config.json');
       if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.info) {
         console.log(`${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}: Fetching ${gcFile.name}`);
       }
@@ -78,15 +76,14 @@ config.gcFiles.forEach((gcFile) => {
           }
           // executing the query:
           return db.none(query)
-            .catch(LOG_LEVELS[config.logLevel] <= LOG_LEVELS.errors ? (e) => console.error(e) : e => e);
+            .catch((e) => Promise.reject(e));
         })
-        .catch(LOG_LEVELS[config.logLevel] <= LOG_LEVELS.errors ? (e) => console.error(e) : e => e)
-        .finally(LOG_LEVELS[config.logLevel] <= LOG_LEVELS.info ? (e) => {
-          if (e === undefined) {
-            console.log(`${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}: Transaction completed.`);
+        .then(() => {
+          if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.info) {
+            console.log('Transaction completed successfully.');
           }
-          return e;
-        } : e => e);
+        })
+        .catch((e) => Promise.reject(e));
     } catch (error) {
       if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.errors) {
       console.error(error);
