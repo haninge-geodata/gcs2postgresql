@@ -80,13 +80,13 @@ config.gcFiles.forEach((gcFile) => {
         })
         .then(() => {
           if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.info) {
-            console.log('Transaction completed successfully.');
+            console.log(`${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}: Transaction completed successfully.`);
           }
         })
         .catch((e) => Promise.reject(e));
     } catch (error) {
       if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.errors) {
-      console.error(error);
+        console.error(`${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}: ${error}`);
     }
     }
   });
